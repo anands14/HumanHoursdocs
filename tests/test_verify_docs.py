@@ -28,6 +28,17 @@ from scripts.verify_docs import (  # noqa: E402
 )
 
 
+class WorkflowSecurityTests(unittest.TestCase):
+    def test_untrusted_checkout_is_anchored_to_the_docs_directory(self) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "docs-content.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("sparse-checkout-cone-mode: false", workflow)
+        self.assertRegex(workflow, r"sparse-checkout: \|\n\s+/docs/\n")
+        self.assertNotRegex(workflow, r"sparse-checkout:\s*docs\s*$")
+
+
 class DocumentParserTests(unittest.TestCase):
     def test_only_visible_body_content_satisfies_the_parser(self) -> None:
         parser = DocumentParser()

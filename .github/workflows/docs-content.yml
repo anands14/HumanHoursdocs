@@ -50,7 +50,9 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
           path: candidate
-          sparse-checkout: docs
+          sparse-checkout: |
+            /docs/
+          sparse-checkout-cone-mode: false
           persist-credentials: false
           # Candidate bytes are parsed only as untrusted data by the base-branch verifier.
           # No candidate script, action, generated file, or executable is run in this job.
