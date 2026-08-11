@@ -1,0 +1,101 @@
+name: docs-content
+
+on:
+  pull_request_target:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  mark-trusted-content-pending:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    # This token shares the GitHub Actions app identity with other workflows.
+    # CONTRIBUTING.md therefore makes the repository's single-writer threat model explicit.
+    permissions:
+      statuses: write
+    steps:
+      - name: Mark the candidate status pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state="pending" \
+            -f context="docs/trusted-content" \
+            -f description="Trusted disclosure verification is running" \
+            -f target_url="$RUN_URL"
+
+  verify-trusted-content:
+    needs: mark-trusted-content-pending
+    if: always() && (github.event_name == 'push' || needs.mark-trusted-content-pending.result == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the trusted verifier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          path: trusted
+          persist-credentials: false
+      - name: Check out candidate documents
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          sparse-checkout: docs
+          persist-credentials: false
+          # Candidate bytes are parsed only as untrusted data by the base-branch verifier.
+          # No candidate script, action, generated file, or executable is run in this job.
+          allow-unsafe-pr-checkout: true
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13.13"
+      - name: Test the trusted verifier
+        working-directory: trusted
+        run: python3 tests/test_verify_docs.py -v
+      - name: Verify candidate disclosure content
+        if: github.event_name == 'pull_request_target'
+        run: python3 trusted/scripts/verify_docs.py --docs-dir candidate/docs
+      - name: Verify published-branch disclosure content
+        if: github.event_name == 'push'
+        run: python3 trusted/scripts/verify_docs.py
+
+  report-trusted-content:
+    needs:
+      - mark-trusted-content-pending
+      - verify-trusted-content
+    if: always() && github.event_name == 'pull_request_target'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    # Keep status authority out of every job that checks out candidate-controlled bytes.
+    permissions:
+      statuses: write
+    steps:
+      - name: Publish the final trusted candidate status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          VERIFY_RESULT: ${{ needs.verify-trusted-content.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$VERIFY_RESULT" = "success" ]; then
+            state="success"
+            description="Trusted disclosure content passed"
+          else
+            state="failure"
+            description="Trusted disclosure content failed"
+          fi
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state="$state" \
+            -f context="docs/trusted-content" \
+            -f description="$description" \
+            -f target_url="$RUN_URL"
