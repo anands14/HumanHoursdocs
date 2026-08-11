@@ -28,19 +28,9 @@ APPROVED_META_TAGS = [
     {"name": "viewport", "content": "width=device-width, initial-scale=1"},
 ]
 
-LEGACY_DOCUMENT_SHA256 = {
-    "privacy.html": "c54e793e64e57e2fc15583896bb1ba8bccda36b9ffa83b10a74fae7b5dc1a263",
-    "support.html": "bbb009c7d70bbcdf4ef344cd282c85cf53d363e29e42526699ea891500d35300",
-}
-
-PROPOSED_DOCUMENT_SHA256 = {
+APPROVED_DOCUMENT_SHA256 = {
     "privacy.html": "64ffc311b8c575681fe071915028301badd6e548e40bcae7e5a1446edd007f06",
     "support.html": "ab572da17824c46d211e9bae2bb8309044657c585fc10de8c032cb5e6a48292a",
-}
-
-APPROVED_DOCUMENT_PAIRS = {
-    "legacy": LEGACY_DOCUMENT_SHA256,
-    "proposed": PROPOSED_DOCUMENT_SHA256,
 }
 
 APPROVED_STYLES = {
@@ -686,7 +676,7 @@ def verify_document(path: Path, docs_root: Path) -> list[str]:
     visible_text = document.visible_text
 
     actual_digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    if actual_digest != PROPOSED_DOCUMENT_SHA256[path.name]:
+    if actual_digest != APPROVED_DOCUMENT_SHA256[path.name]:
         errors.append(f"{path.name}: document bytes differ from the reviewed document")
 
     errors.extend(f"{path.name}: {error}" for error in document.parser_errors)
@@ -731,7 +721,6 @@ def verify_docs(docs_root: Path) -> list[str]:
     elif nojekyll.read_bytes() != b"\n":
         errors.append(f"required static-pages marker has unexpected content: {nojekyll}")
 
-    document_paths: dict[str, Path] = {}
     for file_name in REQUIRED_STATEMENTS:
         path = docs_root / file_name
         if path.is_symlink():
@@ -740,31 +729,6 @@ def verify_docs(docs_root: Path) -> list[str]:
         if not path.is_file():
             errors.append(f"missing required document: {path}")
             continue
-        document_paths[file_name] = path
-
-    if len(document_paths) != len(REQUIRED_STATEMENTS):
-        return errors
-
-    actual_pair = {
-        file_name: hashlib.sha256(path.read_bytes()).hexdigest()
-        for file_name, path in document_paths.items()
-    }
-    approved_contract = next(
-        (
-            contract_name
-            for contract_name, approved_pair in APPROVED_DOCUMENT_PAIRS.items()
-            if actual_pair == approved_pair
-        ),
-        None,
-    )
-    if approved_contract is None:
-        errors.append("published documents are not an approved complete disclosure pair")
-        return errors
-
-    if approved_contract == "legacy":
-        return errors
-
-    for file_name, path in document_paths.items():
         errors.extend(verify_document(path, docs_root))
     return errors
 

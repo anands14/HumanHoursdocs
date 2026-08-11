@@ -18,15 +18,13 @@ Before adding another writer, replace this status with a dedicated GitHub App or
 `CODEOWNERS` routes every change to the sole trusted writer for review, but the branch rule must not require formal code-owner approval while that writer also authors repository pull requests because GitHub does not allow authors to approve their own pull requests.
 If another trusted reviewer is added later, enable required code-owner approval only after the status source has also moved to a dedicated identity.
 
-## Bootstrap
+## Trust-root bootstrap
 
 The first pull request that introduces `CODEOWNERS`, the trusted workflow, and the verifier cannot protect itself because those trust roots do not yet exist on the default branch.
-This one-time bootstrap keeps the exact legacy document pair published while accepting either that complete pair or the exact proposed replacement pair.
-It never accepts a mixture of legacy and proposed pages.
-Review and merge the bootstrap pull request manually before enabling the required status and before merging any disclosure-content pull request.
-After the bootstrap is on `main`, update or reopen the draft disclosure-content pull request once so the trusted workflow publishes `docs/trusted-content` and GitHub offers the GitHub Actions app as its expected source.
-Then configure the repository rule described above, rebase or recreate the disclosure-content pull request on the protected base, update its head again, and confirm a fresh `docs/trusted-content` status protects that exact head SHA before merge.
-Remove the retired legacy pair from the verifier immediately after the proposed pair is published so later changes use the normal staged migration below.
+The initial bootstrap therefore landed separately while the exact legacy document pair remained published, and it temporarily accepted either the complete legacy pair or the complete reviewed replacement pair.
+The follow-on disclosure change removed that transitional legacy acceptance when it published the replacement pair.
+Do not reintroduce the retired legacy hashes into the verifier's accepted document contracts.
+If these trust roots ever need to be rebuilt, repeat the same staged sequence: land and review the trusted verifier first, seed its expected status source, enable the strict repository rule, and only then publish content from a freshly verified head.
 
 ## Changing published content
 
