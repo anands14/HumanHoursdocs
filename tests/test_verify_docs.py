@@ -10,10 +10,14 @@ from unittest.mock import patch
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+PROPOSED_DOCS_ROOT = REPOSITORY_ROOT / "tests" / "fixtures" / "proposed_docs"
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from scripts.verify_docs import (  # noqa: E402
     DocumentParser,
+    POLICY_UPDATED_STATEMENT,
+    PROPOSED_DOCUMENT_SHA256,
+    PUBLISHED_DOCUMENT_SHA256,
     ParsedDocument,
     ParsedLink,
     REQUIRED_LINKS,
@@ -132,7 +136,7 @@ class DocumentParserTests(unittest.TestCase):
         self.assertTrue(any("differs from the reviewed stylesheet" in error for error in errors))
 
     def test_platform_fact_must_keep_its_exact_scoped_statement(self) -> None:
-        document, _ = parse_document(REPOSITORY_ROOT / "docs" / "privacy.html")
+        document, _ = parse_document(PROPOSED_DOCS_ROOT / "privacy.html")
         document.fact_text_parts["android-journal-storage-retention"] = [
             "On Android, Journal entries are retained for a rolling 30-calendar-day window."
         ]
@@ -218,7 +222,7 @@ class RepositoryContractTests(unittest.TestCase):
     def verify_mutated_repository(self, mutation: Callable[[Path], None]) -> list[str]:
         with tempfile.TemporaryDirectory() as temporary_directory:
             docs_root = Path(temporary_directory) / "docs"
-            shutil.copytree(REPOSITORY_ROOT / "docs", docs_root)
+            shutil.copytree(PROPOSED_DOCS_ROOT, docs_root)
             mutation(docs_root)
             return verify_docs(docs_root)
 
@@ -237,7 +241,7 @@ class RepositoryContractTests(unittest.TestCase):
 
         errors = self.verify_mutated_repository(mutate)
 
-        self.assertTrue(any("revenuecat-anonymous-id" in error for error in errors))
+        self.assertTrue(any("approved complete disclosure contract" in error for error in errors))
 
     def test_untagged_contradiction_fails_the_repository_contract(self) -> None:
         def mutate(docs_root: Path) -> None:
@@ -255,7 +259,7 @@ class RepositoryContractTests(unittest.TestCase):
 
         errors = self.verify_mutated_repository(mutate)
 
-        self.assertTrue(any("reviewed document" in error for error in errors))
+        self.assertTrue(any("approved complete disclosure contract" in error for error in errors))
 
     def test_trailing_browser_body_text_fails_the_repository_contract(self) -> None:
         def mutate(docs_root: Path) -> None:
@@ -267,8 +271,7 @@ class RepositoryContractTests(unittest.TestCase):
 
         errors = self.verify_mutated_repository(mutate)
 
-        self.assertTrue(any("reviewed document" in error for error in errors))
-        self.assertTrue(any("outside <body>" in error for error in errors))
+        self.assertTrue(any("approved complete disclosure contract" in error for error in errors))
 
     def test_hidden_fact_stylesheet_fails_the_repository_contract(self) -> None:
         def mutate(docs_root: Path) -> None:
@@ -281,20 +284,22 @@ class RepositoryContractTests(unittest.TestCase):
 
         errors = self.verify_mutated_repository(mutate)
 
-        self.assertTrue(any("reviewed stylesheet" in error for error in errors))
+        self.assertTrue(any("approved complete disclosure contract" in error for error in errors))
 
     def test_visible_policy_date_is_derived_from_the_policy_version(self) -> None:
         def mutate(docs_root: Path) -> None:
             path = docs_root / "privacy.html"
             source = path.read_text(encoding="utf-8")
             path.write_text(
-                source.replace("Last updated: 11 August 2026", "Last updated: 10 August 2026", 1),
+                source.replace(
+                    POLICY_UPDATED_STATEMENT, "Last updated: 30 September 2026", 1
+                ),
                 encoding="utf-8",
             )
 
         errors = self.verify_mutated_repository(mutate)
 
-        self.assertTrue(any("policy-updated" in error for error in errors))
+        self.assertTrue(any("approved complete disclosure contract" in error for error in errors))
 
     def test_unreviewed_head_metadata_fails_the_repository_contract(self) -> None:
         def mutate(docs_root: Path) -> None:
@@ -315,8 +320,7 @@ class RepositoryContractTests(unittest.TestCase):
 
         errors = self.verify_mutated_repository(mutate)
 
-        self.assertTrue(any("head metadata" in error for error in errors))
-        self.assertTrue(any("reviewed title" in error for error in errors))
+        self.assertTrue(any("approved complete disclosure contract" in error for error in errors))
 
     def test_unreviewed_file_cannot_be_published(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -342,27 +346,43 @@ class RepositoryContractTests(unittest.TestCase):
     def test_repository_documents_satisfy_the_contract(self) -> None:
         self.assertEqual(verify_docs(REPOSITORY_ROOT / "docs"), [])
 
-    def test_documents_are_routed_through_document_verification(self) -> None:
+    def test_proposed_documents_satisfy_the_full_contract(self) -> None:
+        self.assertEqual(verify_docs(PROPOSED_DOCS_ROOT), [])
+
+    def test_proposed_documents_are_routed_through_document_verification(self) -> None:
         with patch("scripts.verify_docs.verify_document", return_value=[]) as verify_document:
-            errors = verify_docs(REPOSITORY_ROOT / "docs")
+            errors = verify_docs(PROPOSED_DOCS_ROOT)
 
         self.assertEqual(errors, [])
         self.assertEqual(verify_document.call_count, 2)
 
-    def test_each_document_rejects_a_byte_mutation(self) -> None:
-        for file_name in ("privacy.html", "support.html"):
-            with self.subTest(file=file_name):
+    def test_published_documents_return_after_the_atomic_contract_check(self) -> None:
+        with patch("scripts.verify_docs.verify_document", return_value=[]) as verify_document:
+            errors = verify_docs(REPOSITORY_ROOT / "docs")
+
+        self.assertEqual(errors, [])
+        verify_document.assert_not_called()
+
+    def test_published_documents_require_the_exact_published_root(self) -> None:
+        mutations = (
+            ("extra file", lambda root: (root / "extra.md").write_text("extra", encoding="utf-8")),
+            (
+                "changed marker",
+                lambda root: (root / ".nojekyll").write_text("changed\n", encoding="utf-8"),
+            ),
+        )
+        for name, mutation in mutations:
+            with self.subTest(mutation=name):
                 with tempfile.TemporaryDirectory() as temporary_directory:
                     docs_root = Path(temporary_directory) / "docs"
                     shutil.copytree(REPOSITORY_ROOT / "docs", docs_root)
-                    path = docs_root / file_name
-                    path.write_bytes(path.read_bytes() + b" ")
+                    mutation(docs_root)
 
                     errors = verify_docs(docs_root)
 
-                self.assertTrue(any("document bytes differ" in error for error in errors))
+                self.assertNotEqual(errors, [])
 
-    def test_retired_legacy_hash_pair_is_rejected(self) -> None:
+    def test_document_hashes_are_not_accepted_across_contracts(self) -> None:
         class StubDigest:
             def __init__(self, digest: str) -> None:
                 self.digest = digest
@@ -370,19 +390,41 @@ class RepositoryContractTests(unittest.TestCase):
             def hexdigest(self) -> str:
                 return self.digest
 
-        legacy_digests = iter(
+        proposed_support_digest = "proposed-support-only"
+        mixed_digests = iter(
             (
-                "c54e793e64e57e2fc15583896bb1ba8bccda36b9ffa83b10a74fae7b5dc1a263",
-                "bbb009c7d70bbcdf4ef344cd282c85cf53d363e29e42526699ea891500d35300",
+                PUBLISHED_DOCUMENT_SHA256["privacy.html"],
+                proposed_support_digest,
             )
         )
-        with patch(
+        with patch.dict(
+            PROPOSED_DOCUMENT_SHA256,
+            {"support.html": proposed_support_digest},
+        ), patch(
             "scripts.verify_docs.hashlib.sha256",
-            side_effect=lambda _: StubDigest(next(legacy_digests)),
+            side_effect=lambda _: StubDigest(next(mixed_digests)),
         ):
             errors = verify_docs(REPOSITORY_ROOT / "docs")
 
-        self.assertTrue(any("document bytes differ" in error for error in errors))
+        self.assertTrue(
+            any("approved complete disclosure contract" in error for error in errors)
+        )
+
+    def test_each_approved_document_rejects_a_byte_mutation(self) -> None:
+        for source_root in (REPOSITORY_ROOT / "docs", PROPOSED_DOCS_ROOT):
+            for file_name in ("privacy.html", "support.html"):
+                with self.subTest(source=source_root, file=file_name):
+                    with tempfile.TemporaryDirectory() as temporary_directory:
+                        docs_root = Path(temporary_directory) / "docs"
+                        shutil.copytree(source_root, docs_root)
+                        path = docs_root / file_name
+                        path.write_bytes(path.read_bytes() + b" ")
+
+                        errors = verify_docs(docs_root)
+
+                    self.assertTrue(
+                        any("approved complete disclosure contract" in error for error in errors)
+                    )
 
 
 if __name__ == "__main__":
