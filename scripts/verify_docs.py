@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 
-POLICY_VERSION = "2026-08-11"
+POLICY_VERSION = "2026-10-01"
 _POLICY_DATE = date.fromisoformat(POLICY_VERSION)
 POLICY_UPDATED_STATEMENT = f"Last updated: {_POLICY_DATE.day} {_POLICY_DATE:%B %Y}"
 
@@ -28,9 +28,19 @@ APPROVED_META_TAGS = [
     {"name": "viewport", "content": "width=device-width, initial-scale=1"},
 ]
 
-APPROVED_DOCUMENT_SHA256 = {
+PUBLISHED_DOCUMENT_SHA256 = {
     "privacy.html": "64ffc311b8c575681fe071915028301badd6e548e40bcae7e5a1446edd007f06",
     "support.html": "ab572da17824c46d211e9bae2bb8309044657c585fc10de8c032cb5e6a48292a",
+}
+
+PROPOSED_DOCUMENT_SHA256 = {
+    "privacy.html": "dd31695ccf2e16b8b79228f3c0ec5daf19780f25c5e87675c3af02e26fc7f9d0",
+    "support.html": "ab572da17824c46d211e9bae2bb8309044657c585fc10de8c032cb5e6a48292a",
+}
+
+APPROVED_DOCUMENT_CONTRACTS = {
+    "published": PUBLISHED_DOCUMENT_SHA256,
+    "proposed": PROPOSED_DOCUMENT_SHA256,
 }
 
 APPROVED_STYLES = {
@@ -89,6 +99,42 @@ REQUIRED_STATEMENTS = {
             "Human Hours does not send Screen Time data, selected app or website identifiers, Journal content, or "
             "protection rules to RevenueCat, analytics services, advertisers, or a Human Hours server."
         ),
+        "ios-fresh-mind-purpose": (
+            "Fresh Mind can use Apple's Screen Time controls to keep supported apps unavailable during morning and evening windows you choose."
+        ),
+        "ios-fresh-mind-local-data": (
+            "Your wake and sleep times, window durations, allowed apps, Deep Work link, same-day adjustments, occurrence history, and protection diagnostics stay on your device in the shared Human Hours app container."
+        ),
+        "ios-fresh-mind-no-egress": (
+            "Human Hours does not upload Fresh Mind schedules, durations, allowed-app identities, adjustment details, or Screen Time data to CloudKit or a Human Hours server."
+        ),
+        "ios-flow-circles-purpose": (
+            "If you create or join a Flow Circle, Human Hours uses Apple CloudKit private and shared databases to show the circle and derive its shared daily streak."
+        ),
+        "ios-flow-circles-data": (
+            "Circle records can include the circle name and creation time; the circle type and configuration, including an opaque selected-habit identifier and whether weekly-slip forgiveness is enabled; your chosen display name and dinosaur identifier; an opaque CloudKit member identifier; your effective-dated time-zone and day-start history; the logical-day labels on which you completed Flow; the last fully closed day your device reported; record update times; and membership join and leave times."
+        ),
+        "ios-flow-circles-recipients": (
+            "Anyone who accepts a circle's public invite link can read and contribute to its shared records. Apple stores the records in the creator's iCloud shared zone. Human Hours does not currently support revoking one person while keeping the same public circle active."
+        ),
+        "ios-flow-circles-invite-links": (
+            "Human Hours places the CloudKit share URL in the public invite link's URL fragment. The fragment is removed before a browser sends its HTTP request to humanhours.pages.dev, so that host does not receive the share URL in the request."
+        ),
+        "ios-flow-circles-exclusions": (
+            "Flow Circles never uploads Screen Time totals, selected apps or websites, Journal content, Flow duration or reflections, Pause outcomes, Story progress, or protection rules."
+        ),
+        "ios-fresh-mind-circles-data": (
+            "If you join a Fresh Mind Circle, Human Hours can share the logical-day labels you earned, neutral or unverified logical-day labels without their reasons, and the logical day when your participation began. It does not share your schedule, wake or sleep times, duration, allowed apps, Screen Time data, same-day adjustments, authorization state, occurrence evidence, or technical reasons."
+        ),
+        "ios-discipline-circles-data": (
+            "If you join a Discipline Circle, Human Hours can share how many apps you committed to, but not which apps."
+        ),
+        "ios-flow-circles-notifications": (
+            "CloudKit can send a silent notification that circle data changed. Human Hours fetches the changed records and decides on your device whether to compose a circle notification; it does not send member names or notification text through a Human Hours server."
+        ),
+        "ios-flow-circles-no-public-database": (
+            "Human Hours does not use CloudKit's public database for Flow Circles and does not copy circle records to a Human Hours server."
+        ),
         "android-accessibility-consent": (
             "On Android, Mindful Pause is optional and uses an Accessibility Service only after you read the in-app "
             "disclosure, affirmatively consent, and enable the service in Android Settings."
@@ -107,14 +153,14 @@ REQUIRED_STATEMENTS = {
             "foreground apps."
         ),
         "android-notifications": (
-            "Android can ask for notification permission to show an ongoing Flow countdown and completion actions."
+            "Android can ask for notification permission to show an ongoing Flow countdown, completion actions, and a note when Dino's Story progresses."
         ),
         "android-exact-alarm-check": (
-            "On Android versions that require it, Human Hours checks whether exact-alarm access has already been "
-            "granted; it does not open the system screen to request that access."
+            "On Android versions that require it, Flow checks whether exact-alarm access has already been granted; it "
+            "does not open the system screen to request that access, and uses an inexact fallback when access is unavailable."
         ),
         "android-exact-alarm-manual-grant": (
-            "You can grant Alarms & reminders manually under Android Special app access where that setting is available."
+            "You can allow Alarms & reminders manually under Android Special app access where that setting is available."
         ),
         "android-alarm-fallback": (
             "If exact-alarm access is unavailable, the system fallback can deliver the completion alert late."
@@ -165,6 +211,9 @@ REQUIRED_STATEMENTS = {
             "Session and reflection history is retained for 14 days or 200 records, whichever limit is reached first."
         ),
         "ios-diagnostic-retention": "Diagnostic history is capped at 80 entries.",
+        "ios-flow-circle-retention": (
+            "Flow Circle day labels and membership history can remain in the circle owner's iCloud shared zone for the life of the circle so long streaks stay exact. Leaving removes that shared circle from the departing member's account. Deleting the circle removes its shared zone for everyone."
+        ),
         "android-journal-storage-retention": (
             "On Android, Journal entries are retained for the current logical day and the preceding 29 logical days."
         ),
@@ -186,6 +235,9 @@ REQUIRED_STATEMENTS = {
         "ios-delete-not-offload": (
             "To remove other iOS app data, delete Human Hours from the device rather than offloading it, because "
             "offloading can preserve app data."
+        ),
+        "ios-flow-circle-deletion": (
+            "A Flow Circle owner can delete the circle for everyone, and a member can leave a circle. Because circles use a public invite link, Human Hours does not offer individual member removal."
         ),
         "android-delete": (
             "On Android, Settings > Delete local data removes the primary state and its Human Hours recovery copies."
@@ -676,7 +728,7 @@ def verify_document(path: Path, docs_root: Path) -> list[str]:
     visible_text = document.visible_text
 
     actual_digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    if actual_digest != APPROVED_DOCUMENT_SHA256[path.name]:
+    if actual_digest != PROPOSED_DOCUMENT_SHA256[path.name]:
         errors.append(f"{path.name}: document bytes differ from the reviewed document")
 
     errors.extend(f"{path.name}: {error}" for error in document.parser_errors)
@@ -721,6 +773,7 @@ def verify_docs(docs_root: Path) -> list[str]:
     elif nojekyll.read_bytes() != b"\n":
         errors.append(f"required static-pages marker has unexpected content: {nojekyll}")
 
+    document_paths: dict[str, Path] = {}
     for file_name in REQUIRED_STATEMENTS:
         path = docs_root / file_name
         if path.is_symlink():
@@ -729,6 +782,31 @@ def verify_docs(docs_root: Path) -> list[str]:
         if not path.is_file():
             errors.append(f"missing required document: {path}")
             continue
+        document_paths[file_name] = path
+
+    if len(document_paths) != len(REQUIRED_STATEMENTS):
+        return errors
+
+    actual_contract = {
+        file_name: hashlib.sha256(path.read_bytes()).hexdigest()
+        for file_name, path in document_paths.items()
+    }
+    approved_contract = next(
+        (
+            contract_name
+            for contract_name, approved_hashes in APPROVED_DOCUMENT_CONTRACTS.items()
+            if actual_contract == approved_hashes
+        ),
+        None,
+    )
+    if approved_contract is None:
+        errors.append("published documents are not an approved complete disclosure contract")
+        return errors
+
+    if approved_contract == "published":
+        return errors
+
+    for file_name, path in document_paths.items():
         errors.extend(verify_document(path, docs_root))
     return errors
 
