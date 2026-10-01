@@ -22,9 +22,9 @@
   }
 </style>
 </head>
-<body data-policy-version="2026-08-11">
+<body data-policy-version="2026-10-01">
 <h1>Human Hours - Privacy Policy</h1>
-<p class="updated" data-fact-id="policy-updated">Last updated: 11 August 2026</p>
+<p class="updated" data-fact-id="policy-updated">Last updated: 1 October 2026</p>
 
 <p data-fact-id="platform-scope">This policy covers Human Hours on iOS and Android.</p>
 <p data-fact-id="provider">Human Hours is provided by Anand Sharma.</p>
@@ -48,6 +48,22 @@ names, durations, pickup and notification counts, hourly or daily history, and r
 <p data-fact-id="ios-no-wellness-egress">Human Hours does not send Screen Time data, selected app or website identifiers, Journal content, or protection rules
 to RevenueCat, analytics services, advertisers, or a Human Hours server.</p>
 
+<h3>iOS Fresh Mind</h3>
+<p data-fact-id="ios-fresh-mind-purpose">Fresh Mind can use Apple&rsquo;s Screen Time controls to keep supported apps unavailable during morning and evening windows you choose.</p>
+<p data-fact-id="ios-fresh-mind-local-data">Your wake and sleep times, window durations, allowed apps, Deep Work link, same-day adjustments, occurrence history, and protection diagnostics stay on your device in the shared Human Hours app container.</p>
+<p data-fact-id="ios-fresh-mind-no-egress">Human Hours does not upload Fresh Mind schedules, durations, allowed-app identities, adjustment details, or Screen Time data to CloudKit or a Human Hours server.</p>
+
+<h3>iOS Flow Circles and iCloud sharing</h3>
+<p data-fact-id="ios-flow-circles-purpose">If you create or join a Flow Circle, Human Hours uses Apple CloudKit private and shared databases to show the circle and derive its shared daily streak.</p>
+<p data-fact-id="ios-flow-circles-data">Circle records can include the circle name and creation time; the circle type and configuration, including an opaque selected-habit identifier and whether weekly-slip forgiveness is enabled; your chosen display name and dinosaur identifier; an opaque CloudKit member identifier; your effective-dated time-zone and day-start history; the logical-day labels on which you completed Flow; the last fully closed day your device reported; record update times; and membership join and leave times.</p>
+<p data-fact-id="ios-flow-circles-recipients">Anyone who accepts a circle&rsquo;s public invite link can read and contribute to its shared records. Apple stores the records in the creator&rsquo;s iCloud shared zone. Human Hours does not currently support revoking one person while keeping the same public circle active.</p>
+<p data-fact-id="ios-flow-circles-invite-links">Human Hours places the CloudKit share URL in the public invite link&rsquo;s URL fragment. The fragment is removed before a browser sends its HTTP request to humanhours.pages.dev, so that host does not receive the share URL in the request.</p>
+<p data-fact-id="ios-flow-circles-exclusions">Flow Circles never uploads Screen Time totals, selected apps or websites, Journal content, Flow duration or reflections, Pause outcomes, Story progress, or protection rules.</p>
+<p data-fact-id="ios-fresh-mind-circles-data">If you join a Fresh Mind Circle, Human Hours can share the logical-day labels you earned, neutral or unverified logical-day labels without their reasons, and the logical day when your participation began. It does not share your schedule, wake or sleep times, duration, allowed apps, Screen Time data, same-day adjustments, authorization state, occurrence evidence, or technical reasons.</p>
+<p data-fact-id="ios-discipline-circles-data">If you join a Discipline Circle, Human Hours can share how many apps you committed to, but not which apps.</p>
+<p data-fact-id="ios-flow-circles-notifications">CloudKit can send a silent notification that circle data changed. Human Hours fetches the changed records and decides on your device whether to compose a circle notification; it does not send member names or notification text through a Human Hours server.</p>
+<p data-fact-id="ios-flow-circles-no-public-database">Human Hours does not use CloudKit&rsquo;s public database for Flow Circles and does not copy circle records to a Human Hours server.</p>
+
 <h3>Android Mindful Pause</h3>
 <p data-fact-id="android-accessibility-consent">On Android, Mindful Pause is optional and uses an Accessibility Service only after you read the in-app disclosure,
 affirmatively consent, and enable the service in Android Settings.</p>
@@ -61,10 +77,10 @@ to protect.</p>
 <p>Human Hours does not request broad package visibility.</p>
 
 <h3>Android notifications and exact alarms</h3>
-<p data-fact-id="android-notifications">Android can ask for notification permission to show an ongoing Flow countdown and completion actions.</p>
-<p data-fact-id="android-exact-alarm-check">On Android versions that require it, Human Hours checks whether exact-alarm access has already been granted; it does not open the system screen to request that access.</p>
-<p data-fact-id="android-exact-alarm-manual-grant">You can grant Alarms &amp; reminders manually under Android Special app access where that setting is available.</p>
-<p>If notification permission is declined, Flow can still run and record locally without those notifications.</p>
+<p data-fact-id="android-notifications">Android can ask for notification permission to show an ongoing Flow countdown, completion actions, and a note when Dino&rsquo;s Story progresses.</p>
+<p data-fact-id="android-exact-alarm-check">On Android versions that require it, Flow checks whether exact-alarm access has already been granted; it does not open the system screen to request that access, and uses an inexact fallback when access is unavailable.</p>
+<p data-fact-id="android-exact-alarm-manual-grant">You can allow Alarms &amp; reminders manually under Android Special app access where that setting is available.</p>
+<p>If notification permission is declined, Flow can still run and record locally and Story progress remains saved without those notifications.</p>
 <p data-fact-id="android-alarm-fallback">If exact-alarm access is unavailable, the system fallback can deliver the completion alert late.</p>
 <p>These permissions do not give Human Hours access to your notifications, alarm history, Journal content, or screen
 content.</p>
@@ -107,6 +123,7 @@ Privacy guidance</a>, plus its <a href="https://www.revenuecat.com/docs/integrat
   <li data-fact-id="ios-intent-retention">Intent Check history is retained for 8 logical days.</li>
   <li data-fact-id="ios-session-retention">Session and reflection history is retained for 14 days or 200 records, whichever limit is reached first.</li>
   <li data-fact-id="ios-diagnostic-retention">Diagnostic history is capped at 80 entries.</li>
+  <li data-fact-id="ios-flow-circle-retention">Flow Circle day labels and membership history can remain in the circle owner&rsquo;s iCloud shared zone for the life of the circle so long streaks stay exact. Leaving removes that shared circle from the departing member&rsquo;s account. Deleting the circle removes its shared zone for everyone.</li>
   <li>Usage history, app-protection rules, settings, and cumulative Story state can remain for the installation lifetime.</li>
 </ul>
 <h3>Android retention</h3>
@@ -126,6 +143,7 @@ disables cleartext network traffic.</p>
 
 <h2>Deletion and permission controls</h2>
 <p>On iOS, Settings &gt; Clear Journal removes all locally stored Journal entries.</p>
+<p data-fact-id="ios-flow-circle-deletion">A Flow Circle owner can delete the circle for everyone, and a member can leave a circle. Because circles use a public invite link, Human Hours does not offer individual member removal.</p>
 <p>You can delete protection rules and revoke Screen Time access separately.</p>
 <p>Human Hours does not currently offer one in-app control that erases every category of iOS state.</p>
 <p data-fact-id="ios-delete-not-offload">To remove other iOS app data, delete Human Hours from the device rather than offloading it, because offloading can
